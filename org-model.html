@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mô hình Doanh nghiệp Tinh gọn — Human × Agent Teams</title>
+  <meta name="description"
+    content="Mô hình 2D tương tác mô tả cấu trúc doanh nghiệp tinh gọn vận hành theo mô hình Human × Agent Teams.">
+  <link rel="stylesheet" href="css/index.css">
+  <style>
+    /* ═══════════════════════════════════════
+       ORG MODEL — page-specific styles
+    ═══════════════════════════════════════ */
+    .org-page { padding: calc(var(--header-height) + 24px) 0 60px; }
+    .org-hero {
+      max-width: 1400px; margin: 0 auto 24px;
+      padding: 0 var(--space-xl);
+    }
+    .org-hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem; font-weight: 800;
+      background: var(--grad-primary);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .org-hero .org-sub {
+      color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 14px;
+      font-weight: 500; letter-spacing: 0.02em;
+    }
+    .org-hero .org-pitch {
+      color: var(--text-secondary); max-width: 880px;
+      font-size: 0.95rem; line-height: 1.7;
+    }
+
+    /* Layer summary */
+    .org-layer-summary {
+      max-width: 1400px; margin: 0 auto 28px;
+      padding: 0 var(--space-xl);
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 1100px) { .org-layer-summary { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px)  { .org-layer-summary { grid-template-columns: 1fr; } }
+    .org-layer-card {
+      background: var(--grad-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex; gap: 12px; align-items: flex-start;
+      transition: all var(--transition);
+    }
+    .org-layer-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+    .org-layer-num {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: var(--grad-primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 0.85rem;
+      flex-shrink: 0; box-shadow: var(--shadow-glow);
+    }
+    .org-layer-title { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+    .org-layer-en    { font-size: 0.75rem; color: var(--color-primary); margin-top: 2px; }
+    .org-layer-role  { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+
+    /* Toolbar */
+    .org-toolbar {
+      max-width: 1400px; margin: 0 auto 12px;
+      padding: 0 var(--space-xl);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .org-toolbar-group {
+      display: flex; gap: 6px; align-items: center;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 4px;
+    }
+    .org-tb-btn {
+      padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm);
+      background: transparent; border: none; color: var(--text-secondary);
+      cursor: pointer; transition: all var(--transition); font-weight: 500;
+    }
+    .org-tb-btn:hover { background: rgba(79,142,247,0.12); color: var(--text-primary); }
+    #zoomLevel {
+      font-size: 0.78rem; color: var(--text-muted);
+      min-width: 44px; text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .org-chip-filter {
+      padding: 6px 12px; border-radius: 999px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .org-chip-filter:hover { border-color: var(--border-hover); color: var(--text-primary); }
+    .org-chip-filter.active { background: var(--grad-primary); color: #fff; border-color: transparent; }
+    .org-chip-filter[data-type="agent"].active      { background: linear-gradient(135deg,#7C3AED,#9d69ff); }
+    .org-chip-filter[data-type="foundation"].active { background: linear-gradient(135deg,#10b981,#34d399); }
+    .org-chip-filter[data-type="human"].active      { background: linear-gradient(135deg,#4F8EF7,#3a71d8); }
+
+    /* Stage */
+    .org-stage-wrap {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 var(--space-xl);
+      position: relative;
+    }
+    .org-stage {
+      width: 100%;
+      aspect-ratio: 16 / 11;
+      max-height: 78vh;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(ellipse at top, rgba(79,142,247,0.08) 0%, transparent 60%),
+        var(--bg-card);
+      box-shadow: var(--shadow-md);
+      overflow: hidden; position: relative;
+    }
+    #orgSvg {
+      width: 100%; height: 100%;
+      cursor: grab;
+      display: block;
+      user-select: none;
+    }
+    #orgSvg:active { cursor: grabbing; }
+
+    /* SVG element styles */
+    .layer-label  { fill: var(--text-primary); font: 700 14px 'Outfit', sans-serif; letter-spacing: 0.04em; }
+    .layer-num    { fill: var(--color-primary); font-weight: 800; }
+    .layer-en     { fill: var(--text-muted); font-weight: 500; font-size: 12px; }
+    .layer-role   { fill: var(--text-secondary); font: 500 11px 'Inter', sans-serif; }
+
+    .node { cursor: pointer; transition: opacity 0.2s ease; }
+    .node-bg { transition: filter 0.2s ease, stroke-width 0.2s ease; }
+    .node:hover .node-bg { stroke-width: 2.2; filter: drop-shadow(0 4px 14px rgba(79,142,247,0.4)); }
+    .node:hover .node-glow { opacity: 0.65; }
+    .node.hot .node-bg { stroke-width: 2.6; }
+    .node.hot .node-glow { opacity: 0.8; }
+    .node.dim { opacity: 0.25; }
+    .node.hidden { display: none; }
+    .node-icon  { font-size: 22px; }
+    .node-title { fill: #f0f6ff; font: 700 13px 'Outfit', sans-serif; }
+    .node-pill  { fill: rgba(255,255,255,0.55); font: 700 9px 'Inter', sans-serif; letter-spacing: 0.12em; }
+    .node-sub   { fill: rgba(139,163,199,0.85); font: 500 10px 'Inter', sans-serif; }
+
+    .edge { transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease; }
+    .edge.hot { stroke: #4F8EF7; stroke-width: 2.4; }
+    .edge.dim { opacity: 0.08; }
+    .edge.hidden { display: none; }
+
+    /* Legend */
+    .org-legend {
+      position: absolute; right: calc(var(--space-xl) + 16px); top: 16px;
+      background: rgba(13,21,48,0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      font-size: 0.78rem; pointer-events: none;
+    }
+    .org-legend-title {
+      font-size: 0.72rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px;
+    }
+    .org-legend-item { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+    .org-legend-dot {
+      width: 14px; height: 14px; border-radius: 4px;
+      border: 1.5px solid; flex-shrink: 0;
+    }
+
+    /* Detail Panel */
+    .org-detail-panel {
+      position: fixed; right: 0; top: var(--header-height); bottom: 0;
+      width: 380px; max-width: 92vw;
+      background: var(--bg-modal);
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 30px rgba(0,0,0,0.5);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      z-index: 50;
+      display: flex; flex-direction: column;
+    }
+    .org-detail-panel.open { transform: translateX(0); }
+    .org-detail-header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .org-detail-header-bar strong { font-family: 'Outfit', sans-serif; font-size: 0.95rem; }
+    .org-detail-close {
+      background: transparent; border: none; color: var(--text-secondary);
+      font-size: 1.2rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    }
+    .org-detail-close:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+
+    .org-detail-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .org-detail-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+    .org-detail-icon {
+      width: 56px; height: 56px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; flex-shrink: 0;
+    }
+    .org-detail-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--text-primary); }
+    .org-detail-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+    .org-pill {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+      border: 1px solid; background: rgba(255,255,255,0.04);
+    }
+    .org-detail-desc {
+      color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7;
+      margin: 8px 0 16px;
+    }
+    .org-section-title {
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin: 14px 0 8px;
+    }
+    .org-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .org-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(79,142,247,0.10);
+      border: 1px solid rgba(79,142,247,0.25);
+      color: var(--text-primary); font-size: 0.78rem;
+    }
+    .org-muted { color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Hint */
+    .org-hint {
+      position: absolute; left: calc(var(--space-xl) + 16px); bottom: 16px;
+      font-size: 0.72rem; color: var(--text-muted);
+      background: rgba(13,21,48,0.7);
+      backdrop-filter: blur(8px);
+      padding: 6px 12px; border-radius: 999px;
+      border: 1px solid var(--border-glass);
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER (matches site) -->
+  <header class="header">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">📚</div>
+      <span>Document Hub</span>
+    </a>
+    <div class="header-spacer"></div>
+    <div class="header-nav">
+      <a href="index.html" class="btn btn-ghost btn-sm">📚 Tài liệu</a>
+      <a href="org-model.html" class="btn btn-primary btn-sm">🏛️ Mô hình</a>
+    </div>
+  </header>
+
+  <main class="org-page">
+    <!-- HERO -->
+    <section class="org-hero">
+      <h1 id="orgTitle">Mô hình Doanh nghiệp Tinh gọn</h1>
+      <div class="org-sub" id="orgSubtitle">Human × Agent Teams</div>
+      <p class="org-pitch" id="orgPitch"></p>
+    </section>
+
+    <!-- LAYER SUMMARY -->
+    <section class="org-layer-summary" id="layerSummary"></section>
+
+    <!-- TOOLBAR -->
+    <section class="org-toolbar">
+      <div class="org-toolbar-group">
+        <button class="org-tb-btn" onclick="zoom(1.2)" title="Zoom in">＋</button>
+        <span id="zoomLevel">100%</span>
+        <button class="org-tb-btn" onclick="zoom(1/1.2)" title="Zoom out">－</button>
+        <button class="org-tb-btn" onclick="resetView()" title="Reset">↺</button>
+        <button class="org-tb-btn" onclick="fitToScreen()" title="Fit to screen">⤢</button>
+      </div>
+      <button class="org-chip-filter active" data-type="all"        onclick="filterByType('all')">Tất cả</button>
+      <button class="org-chip-filter"        data-type="human"      onclick="filterByType('human')">👤 Human</button>
+      <button class="org-chip-filter"        data-type="hybrid"     onclick="filterByType('hybrid')">⚡ Hybrid</button>
+      <button class="org-chip-filter"        data-type="agent"      onclick="filterByType('agent')">🤖 Agent</button>
+      <button class="org-chip-filter"        data-type="foundation" onclick="filterByType('foundation')">🧱 Foundation</button>
+      <div style="flex:1"></div>
+      <button class="org-tb-btn" style="padding:8px 14px;background:var(--bg-card);border:1px solid var(--border)" onclick="exportPNG()">⬇ Tải PNG</button>
+    </section>
+
+    <!-- STAGE -->
+    <div class="org-stage-wrap">
+      <div class="org-stage">
+        <svg id="orgSvg" preserveAspectRatio="xMidYMid meet"></svg>
+
+        <div class="org-legend">
+          <div class="org-legend-title">Chú thích</div>
+          <div class="org-legend-item">
+            <span class="org-legend-dot" style="background:rgba(79,142,247,0.3);border-color:#4F8EF7"></span>
+            Human — Vai trò con người
+          </div>
+          <div class="org-legend-item">
+            <span class="org-legend-dot" style="background:linear-gradient(135deg,rgba(79,142,247,0.4),rgba(124,58,237,0.4));border-color:#9d69ff"></span>
+            Hybrid — Squad người × agent
+          </div>
+          <div class="org-legend-item">
+            <span class="org-legend-dot" style="background:rgba(124,58,237,0.3);border-color:#9d69ff"></span>
+            Agent — AI chuyên biệt
+          </div>
+          <div class="org-legend-item">
+            <span class="org-legend-dot" style="background:rgba(16,185,129,0.3);border-color:#10b981"></span>
+            Foundation — Nền tảng
+          </div>
+        </div>
+
+        <div class="org-hint">💡 Cuộn để zoom · Kéo để di chuyển · Click vào ô để xem chi tiết</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- DETAIL PANEL -->
+  <aside id="detailPanel" class="org-detail-panel">
+    <div class="org-detail-header-bar">
+      <strong>Chi tiết đơn vị</strong>
+      <button class="org-detail-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="org-detail-body" id="detailContent"></div>
+  </aside>
+
+  <script src="js/org-model.js"></script>
+</body>
+
+</html>
